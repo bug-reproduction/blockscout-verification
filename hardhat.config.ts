@@ -58,6 +58,10 @@ const config: HardhatUserConfig = {
       url: node_url('goerli'),
       accounts: accounts('goerli'),
     },
+    sokol: {
+      url: node_url('sokol'),
+      accounts: accounts('sokol'),
+    },
   }),
   paths: {
     sources: 'src',
