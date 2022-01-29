@@ -20,4 +20,5 @@ deployments/hardhat
 deployments/localhost
 
 /.dapp
-etherscan_requests/
+/etherscan_requests/*
+!/etherscan_requests/sokol/

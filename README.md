@@ -1,137 +1,55 @@
-# Boilerplate for ethereum solidity smart contract development
+# Repo that reproduce a verification issue with blockscout
 
-## INSTALL
+
+## Reproduction
+
+clone it first and then install the dependencies
 
 ```bash
 yarn
 ```
 
-## TEST
+After that follow these steps:
 
-There are 2 flavors of test
-
-- One using hardhat that can leverage hardhat-deploy to reuse deployment procedures and named accounts:
-
+1. in one terminal, run the node and deploy the contracts with this simple command :
 ```bash
-yarn test
+yarn dev
 ```
 
-- And another using [dapptools](https://dapp.tools)
-
+2. in another terminal, run the docker that will instantiate blockscout and the postgres db
 ```bash
-dapp test
+docker-compose up
 ```
 
-The latter requires additional step to set up your machine:
+(Note: the docker image used for blockscout is https://hub.docker.com/repository/docker/wighawag/blockscout)
 
-Install dapptools (Following instruction [here](https://github.com/dapphub/dapptools#installation)):
+It is built straight out of blockscout github repo at commit : cae5dd5c500555a7e111d015a164219a39ca0203 : https://github.com/blockscout/blockscout/tree/cae5dd5c500555a7e111d015a164219a39ca0203
 
-```bash
-# user must be in sudoers
-curl -L https://nixos.org/nix/install | sh
 
-# Run this or login again to use Nix
-. "$HOME/.nix-profile/etc/profile.d/nix.sh"
+3. finally in a third terminal, run the following
 
-curl https://dapp.tools/install | sh
-```
-
-Then install solc with the correct version:
+**PLEASE WAIT a bit so that blockscout get ready to process your request**
 
 ```bash
-nix-env -f https://github.com/dapphub/dapptools/archive/master.tar.gz -iA solc-static-versions.solc_0_8_9
+yarn verify localhost --api-url http://localhost:4000 --write-post-data --api-key None
 ```
 
-## SCRIPTS
+## analysis
 
-Here is the list of npm scripts you can execute:
+This third step will attempt to verify the 2 contracts that were deployed with `yarn dev`
 
-Some of them relies on [./\_scripts.js](./_scripts.js) to allow parameterizing it via command line argument (have a look inside if you need modifications)
-<br/><br/>
+One of them of them fail: `GreetingsRegistry`
 
-### `yarn prepare`
+and another succeed: `SimpleERC20`
 
-As a standard lifecycle npm script, it is executed automatically upon install. It generate config file and typechain to get you started with type safe contract interactions
-<br/><br/>
+The option `--write-post-data` is writing the request sent to blockscout api for debugging purpose. It generates 3 files per contract:
+- `etherscan_requests/<network>/<contract-name>_multi-source.json` contains the json representing the source of the contract (same as the file to drop in the frontend ui)
+- `etherscan_requests/<network>/<contract-name>.formdata` is the raw post data send to the api (using `'content-type': 'application/x-www-form-urlencoded'`)
+- `etherscan_requests/<network>/<contract-name>.json` is the json representation of that post data
 
-### `yarn lint`, `yarn lint:fix`, `yarn format` and `yarn format:fix`
 
-These will lint and format check your code. the `:fix` version will modifiy the files to match the requirement specified in `.eslintrc` and `.prettierrc.`
-<br/><br/>
+Note that both contract are verified without problem on Sokol network. Their api request are available in `etherscan_requests/sokol`
 
-### `yarn compile`
+and you can see that the only difference is the addresses
 
-These will compile your contracts
-<br/><br/>
-
-### `yarn void:deploy`
-
-This will deploy your contracts on the in-memory hardhat network and exit, leaving no trace. quick way to ensure deployments work as intended without consequences
-<br/><br/>
-
-### `yarn test [mocha args...]`
-
-These will execute your tests using mocha. you can pass extra arguments to mocha
-<br/><br/>
-
-### `yarn coverage`
-
-These will produce a coverage report in the `coverage/` folder
-<br/><br/>
-
-### `yarn gas`
-
-These will produce a gas report for function used in the tests
-<br/><br/>
-
-### `yarn dev`
-
-These will run a local hardhat network on `localhost:8545` and deploy your contracts on it. Plus it will watch for any changes and redeploy them.
-<br/><br/>
-
-### `yarn local:dev`
-
-This assumes a local node it running on `localhost:8545`. It will deploy your contracts on it. Plus it will watch for any changes and redeploy them.
-<br/><br/>
-
-### `yarn execute <network> <file.ts> [args...]`
-
-This will execute the script `<file.ts>` against the specified network
-<br/><br/>
-
-### `yarn deploy <network> [args...]`
-
-This will deploy the contract on the specified network.
-
-Behind the scene it uses `hardhat deploy` command so you can append any argument for it
-<br/><br/>
-
-### `yarn export <network> <file.json>`
-
-This will export the abi+address of deployed contract to `<file.json>`
-<br/><br/>
-
-### `yarn fork:execute <network> [--blockNumber <blockNumber>] [--deploy] <file.ts> [args...]`
-
-This will execute the script `<file.ts>` against a temporary fork of the specified network
-
-if `--deploy` is used, deploy scripts will be executed
-<br/><br/>
-
-### `yarn fork:deploy <network> [--blockNumber <blockNumber>] [args...]`
-
-This will deploy the contract against a temporary fork of the specified network.
-
-Behind the scene it uses `hardhat deploy` command so you can append any argument for it
-<br/><br/>
-
-### `yarn fork:test <network> [--blockNumber <blockNumber>] [mocha args...]`
-
-This will test the contract against a temporary fork of the specified network.
-<br/><br/>
-
-### `yarn fork:dev <network> [--blockNumber <blockNumber>] [args...]`
-
-This will deploy the contract against a fork of the specified network and it will keep running as a node.
-
-Behind the scene it uses `hardhat node` command so you can append any argument for it
+I have no idea what is going on. There seems to be no flag to have more verbose output in blockscout and the log I see on the docker console bring no clue.
