@@ -15,9 +15,12 @@ services:
       - POSTGRES_USER=dbowner
       - POSTGRES_PASSWORD=let-me-in
       - PGDATA=/tmp
+      #POSTGRES_HOST_AUTH_METHOD=trust seems to be needed by blocscout
+      - POSTGRES_HOST_AUTH_METHOD=trust
 
   blockscout:
-    image: wighawag/blockscout:v0.0.1
+    image: wighawag/blockscout:6d6acfd8a
+    command: 'mix do ecto.create, ecto.migrate, phx.server'
     depends_on:
       postgres:
         condition: service_healthy
@@ -30,5 +33,7 @@ services:
       ETHEREUM_JSONRPC_TRACE_URL: http://host.docker.internal:8545
       #ETHEREUM_JSONRPC_WS_URL: ws://host.docker.internal:8545
       ETHEREUM_JSONRPC_VARIANT: ganache
-      DATABASE_URL: postgresql://dbowner:let-me-in@postgres:5432/explorer?ssl=false
-    entrypoint: '/bin/sh -c "mix do ecto.create, ecto.migrate; mix phx.server"'
+      DATABASE_URL: postgresql://dbowner:@postgres:5432/explorer?ssl=false
+
+      INDEXER_DISABLE_PENDING_TRANSACTIONS_FETCHER: 'true'
+      ECTO_USE_SSL: 'false'
